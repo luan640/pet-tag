@@ -40,7 +40,7 @@ export function PhotoCarousel({ photos, petName }: { photos: PetPhoto[]; petName
 
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
     const el = containerRef.current
-    if (!el) return
+    if (!el || e.pointerType === 'touch') return
     setIsDragging(true)
     dragState.current = { startX: e.clientX, startScrollLeft: el.scrollLeft, pointerId: e.pointerId }
     el.setPointerCapture(e.pointerId)
@@ -77,7 +77,7 @@ export function PhotoCarousel({ photos, petName }: { photos: PetPhoto[]; petName
         onPointerUp={endDrag}
         onPointerLeave={endDrag}
         onPointerCancel={endDrag}
-        className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto touch-pan-y cursor-grab active:cursor-grabbing"
+        className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto cursor-grab active:cursor-grabbing"
       >
         {photos.map((photo, index) => (
           <div key={photo.id} className="aspect-[4/5] w-full shrink-0 snap-center">
