@@ -93,7 +93,11 @@ export default async function PainelPage({
               <div>
                 <p className="font-semibold text-ink">Última localização registrada</p>
                 <p className="text-sm text-ink-soft">
-                  {new Date(pet.last_seen_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                  {new Date(pet.last_seen_at).toLocaleString('pt-BR', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                    timeZone: 'America/Sao_Paulo',
+                  })}
                 </p>
               </div>
             </div>
