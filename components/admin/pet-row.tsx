@@ -10,14 +10,14 @@ import { useToast } from '@/components/ui/toaster'
 import { formatDateShort } from '@/lib/utils'
 import type { PetListRow } from '@/lib/types'
 
-export function PetRow({ pet, publicUrl }: { pet: PetListRow; publicUrl: string }) {
+export function PetRow({ pet, publicUrl, tagUrl }: { pet: PetListRow; publicUrl: string; tagUrl: string }) {
   const router = useRouter()
   const { success: showSuccess } = useToast()
   const [copied, setCopied] = useState(false)
   const [pending, startTransition] = useTransition()
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(publicUrl)
+    await navigator.clipboard.writeText(tagUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 1800)
   }
@@ -53,7 +53,7 @@ export function PetRow({ pet, publicUrl }: { pet: PetListRow; publicUrl: string 
       <div className="flex shrink-0 items-center gap-2">
         <Button variant="ghost" size="sm" onClick={handleCopy}>
           {copied ? <Check size={15} className="text-fern" /> : <Copy size={15} />}
-          {copied ? 'Copiado' : 'Copiar link'}
+          {copied ? 'Copiado' : 'Copiar link da tag'}
         </Button>
         <a href={publicUrl} target="_blank" rel="noreferrer">
           <Button variant="ghost" size="icon" aria-label="Abrir página pública">

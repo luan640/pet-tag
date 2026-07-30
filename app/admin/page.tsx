@@ -54,7 +54,12 @@ export default async function AdminPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {pets.map((pet) => (
-              <PetRow key={pet.id} pet={pet} publicUrl={`${appUrl()}/p/${pet.slug}`} />
+              <PetRow
+                key={pet.id}
+                pet={pet}
+                publicUrl={`${appUrl()}/p/${pet.slug}`}
+                tagUrl={`${appUrl()}/p/${pet.slug}?src=tag`}
+              />
             ))}
           </div>
         )}
