@@ -64,8 +64,16 @@ function TopBar() {
   )
 }
 
-export default async function PetPublicPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function PetPublicPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   const { slug } = await params
+  const { src } = await searchParams
+  const fromTag = src === 'tag'
   const result = await getPet(slug)
 
   if (!result) {
@@ -254,7 +262,7 @@ export default async function PetPublicPage({ params }: { params: Promise<{ slug
           )}
         </section>
 
-        <LocationReporter slug={pet.slug} />
+        {fromTag && <LocationReporter slug={pet.slug} />}
 
         <p className="mx-auto mt-6 max-w-sm text-center text-xs text-ink-faint">
           Identificação digital via PetTag · aproxime o celular na coleira para ver esta página

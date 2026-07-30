@@ -80,7 +80,7 @@ export async function createPetTag(formData: FormData): Promise<ActionResult<New
     success: true,
     data: {
       slug,
-      publicUrl: `${appUrl()}/p/${slug}`,
+      publicUrl: `${appUrl()}/p/${slug}?src=tag`,
       login,
       tempPassword,
       petName,
