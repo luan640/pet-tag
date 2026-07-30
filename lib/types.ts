@@ -28,6 +28,9 @@ export interface Pet {
   is_configured: boolean
   active: boolean
   is_lost: boolean
+  last_seen_lat: number | null
+  last_seen_lng: number | null
+  last_seen_at: string | null
   created_at: string
   updated_at: string
 }

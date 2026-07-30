@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { TagCard } from '@/components/pet/tag-card'
 import { PhotoCarousel } from '@/components/pet/photo-carousel'
+import { LocationReporter } from '@/components/pet/location-reporter'
 
 async function getPet(slug: string) {
   const supabase = await createClient()
@@ -121,16 +122,40 @@ export default async function PetPublicPage({ params }: { params: Promise<{ slug
   const whatsappLink = pet.phone ? `https://wa.me/${normalizePhoneForLink(pet.phone)}` : null
   const telLink = pet.phone ? `tel:${pet.phone.replace(/[^\d+]/g, '')}` : null
 
+  const lostMessage = `Olá! Encontrei o(a) ${pet.name}`
+  const lostWhatsappLink = pet.phone
+    ? `https://wa.me/${normalizePhoneForLink(pet.phone)}?text=${encodeURIComponent(lostMessage)}`
+    : null
+
   return (
     <main className="flex min-h-dvh flex-col bg-bg pb-14">
       <TopBar />
 
       {pet.is_lost && (
-        <div className="bg-red-600 px-5 py-3 text-center text-sm font-semibold text-white">
-          <span className="inline-flex items-center gap-1.5">
-            <AlertTriangle size={16} />
-            {pet.name} está perdido! Se você o encontrou, entre em contato com o tutor.
-          </span>
+        <div className="bg-red-600 px-5 py-4 text-white">
+          <div className="mx-auto flex max-w-sm flex-col items-center gap-2 text-center">
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold">
+              <AlertTriangle size={16} />
+              {pet.name} está perdido! Se você o encontrou, entre em contato com o tutor.
+            </span>
+
+            {(pet.owner_name || pet.phone) && (
+              <p className="text-sm text-white/90">
+                {pet.owner_name}
+                {pet.owner_name && pet.phone && ' · '}
+                {pet.phone}
+              </p>
+            )}
+
+            {lostWhatsappLink && (
+              <a href={lostWhatsappLink} target="_blank" rel="noreferrer" className="mt-1">
+                <Button size="sm" className="bg-white text-red-600 shadow-none hover:bg-white/90">
+                  <MessageCircle size={15} />
+                  Chamar no WhatsApp
+                </Button>
+              </a>
+            )}
+          </div>
         </div>
       )}
 
@@ -228,6 +253,8 @@ export default async function PetPublicPage({ params }: { params: Promise<{ slug
             </div>
           )}
         </section>
+
+        <LocationReporter slug={pet.slug} />
 
         <p className="mx-auto mt-6 max-w-sm text-center text-xs text-ink-faint">
           Identificação digital via PetTag · aproxime o celular na coleira para ver esta página

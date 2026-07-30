@@ -133,6 +133,18 @@ export async function deletePetPhoto(photoId: string): Promise<ActionResult> {
   return { success: true, data: undefined }
 }
 
+export async function reportPetLocation(slug: string, lat: number, lng: number): Promise<ActionResult> {
+  if (!slug || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return { success: false, error: 'Localização inválida.' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('report_pet_location', { p_slug: slug, p_lat: lat, p_lng: lng })
+
+  if (error) return { success: false, error: error.message }
+  return { success: true, data: undefined }
+}
+
 export async function addVaccine(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
   const pet = await getOwnedPet(supabase)

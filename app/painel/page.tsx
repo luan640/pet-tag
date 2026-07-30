@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { LogOut, ExternalLink, PartyPopper } from 'lucide-react'
+import { LogOut, ExternalLink, PartyPopper, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getPetPhotoPublicUrl } from '@/lib/supabase/storage'
 import { signOut } from '@/actions/auth'
@@ -85,6 +85,29 @@ export default async function PainelPage({
         <div className="mb-6">
           <LostToggle petName={pet.name} isLost={pet.is_lost} />
         </div>
+
+        {pet.last_seen_at && pet.last_seen_lat != null && pet.last_seen_lng != null && (
+          <div className="mb-6 flex items-center justify-between gap-3 rounded-3xl border border-line bg-surface p-5">
+            <div className="flex items-start gap-3">
+              <MapPin size={20} className="mt-0.5 shrink-0 text-clay" />
+              <div>
+                <p className="font-semibold text-ink">Última localização registrada</p>
+                <p className="text-sm text-ink-soft">
+                  {new Date(pet.last_seen_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                </p>
+              </div>
+            </div>
+            <a
+              href={`https://www.google.com/maps?q=${pet.last_seen_lat},${pet.last_seen_lng}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Button variant="outline" size="sm" className="shrink-0">
+                Ver mapa
+              </Button>
+            </a>
+          </div>
+        )}
 
         <div className="flex flex-col gap-5">
           <Card>

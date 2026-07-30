@@ -57,7 +57,7 @@ export function PhotosManager({ photos }: { photos: PetPhoto[] }) {
                 type="button"
                 onClick={() => handleDelete(photo.id)}
                 disabled={pending && deletingId === photo.id}
-                className="absolute right-1.5 top-1.5 rounded-full bg-ink/70 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-70"
+                className="absolute right-1.5 top-1.5 rounded-full bg-ink/70 p-1.5 text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 disabled:opacity-70"
                 aria-label="Remover foto"
               >
                 <Trash2 size={13} />
