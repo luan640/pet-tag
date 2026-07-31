@@ -24,7 +24,7 @@ export function LostToggle({ petName, isLost }: { petName: string; isLost: boole
 
   if (isLost) {
     return (
-      <div className="flex flex-col gap-3 rounded-3xl border border-red-200 bg-red-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
           <AlertTriangle size={20} className="mt-0.5 shrink-0 text-red-600" />
           <div>
@@ -34,7 +34,7 @@ export function LostToggle({ petName, isLost }: { petName: string; isLost: boole
             </p>
           </div>
         </div>
-        <Button variant="outline" onClick={handleToggle} disabled={loading} className="shrink-0">
+        <Button variant="outline" onClick={handleToggle} disabled={loading} className="shrink-0 border-pub-ink/15 text-pub-ink hover:bg-pub-ink/5">
           {loading ? 'Atualizando...' : 'Marcar como encontrado'}
         </Button>
       </div>
@@ -42,10 +42,10 @@ export function LostToggle({ petName, isLost }: { petName: string; isLost: boole
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-3xl border border-line bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p className="font-semibold text-ink">{petName} está com você?</p>
-        <p className="text-sm text-ink-soft">Se sumiu, ative o alerta para destacar a página pública.</p>
+        <p className="font-semibold text-pub-ink">{petName} está com você?</p>
+        <p className="text-sm text-pub-ink-soft">Se sumiu, ative o alerta para destacar a página pública.</p>
       </div>
       <Button variant="danger" onClick={handleToggle} disabled={loading} className="shrink-0">
         <AlertTriangle size={16} />

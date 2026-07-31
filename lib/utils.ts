@@ -40,6 +40,26 @@ export function calculateAgeLabel(birthDateStr: string | null): string | null {
   return years === 1 ? '1 ano' : `${years} anos`
 }
 
+export function calculateAgeDetailed(birthDateStr: string | null): string | null {
+  if (!birthDateStr) return null
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(birthDateStr) ? `${birthDateStr}T00:00:00` : birthDateStr
+  const birth = new Date(normalized)
+  if (Number.isNaN(birth.getTime())) return null
+
+  const now = new Date()
+  let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth())
+  if (now.getDate() < birth.getDate()) months -= 1
+  if (months < 0) return null
+
+  if (months < 1) return 'Recem-nascido'
+  if (months < 12) return months === 1 ? '1 mes' : `${months} meses`
+
+  const years = Math.floor(months / 12)
+  const remainingMonths = months % 12
+  const yearsLabel = years === 1 ? '1 ano' : `${years} anos`
+  return remainingMonths === 0 ? yearsLabel : `${yearsLabel} e ${remainingMonths} m`
+}
+
 const PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
 
 export function generateTempPassword(length = 10): string {

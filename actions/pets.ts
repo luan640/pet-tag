@@ -4,7 +4,8 @@ import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { ensurePetPhotosBucket, PET_PHOTOS_BUCKET } from '@/lib/supabase/storage'
-import type { ActionResult, PetSex } from '@/lib/types'
+import { MAX_PET_PHOTOS } from '@/lib/constants'
+import type { ActionResult, PetSex, PetSize } from '@/lib/types'
 
 async function getOwnedPet(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser()
@@ -14,7 +15,7 @@ async function getOwnedPet(supabase: Awaited<ReturnType<typeof createClient>>) {
   return pet
 }
 
-export async function updatePetProfile(formData: FormData): Promise<ActionResult> {
+export async function updatePetIdentity(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
   const pet = await getOwnedPet(supabase)
   if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
@@ -22,31 +23,85 @@ export async function updatePetProfile(formData: FormData): Promise<ActionResult
   const name = String(formData.get('name') ?? '').trim()
   if (!name) return { success: false, error: 'Informe o nome do pet.' }
 
+  const species = String(formData.get('species') ?? '').trim() || 'cachorro'
   const breed = String(formData.get('breed') ?? '').trim() || null
+
+  const { error } = await supabase
+    .from('pets')
+    .update({ name, species, breed, is_configured: true })
+    .eq('id', pet.id)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/painel')
+  return { success: true, data: undefined }
+}
+
+export async function updatePetCharacteristics(formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient()
+  const pet = await getOwnedPet(supabase)
+  if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
+
   const sexRaw = String(formData.get('sex') ?? '')
   const sex: PetSex | null = sexRaw === 'macho' || sexRaw === 'femea' ? sexRaw : null
   const birthDate = String(formData.get('birth_date') ?? '').trim() || null
   const bio = String(formData.get('bio') ?? '').trim() || null
   const allergies = String(formData.get('allergies') ?? '').trim() || null
-  const ownerName = String(formData.get('owner_name') ?? '').trim() || null
-  const phone = String(formData.get('phone') ?? '').trim() || null
-  const location = String(formData.get('location') ?? '').trim() || null
+  const sizeRaw = String(formData.get('size') ?? '')
+  const size: PetSize | null = sizeRaw === 'pequeno' || sizeRaw === 'medio' || sizeRaw === 'grande' ? sizeRaw : null
+  const weightRaw = String(formData.get('weight_kg') ?? '').trim().replace(',', '.')
+  const weightKg = weightRaw && Number.isFinite(Number(weightRaw)) ? Number(weightRaw) : null
+  const furColor = String(formData.get('fur_color') ?? '').trim() || null
+  const neuteredRaw = String(formData.get('neutered') ?? '')
+  const neutered = neuteredRaw === 'true' ? true : neuteredRaw === 'false' ? false : null
 
   const { error } = await supabase
     .from('pets')
     .update({
-      name,
-      breed,
       sex,
       birth_date: birthDate,
       bio,
       allergies,
-      owner_name: ownerName,
-      phone,
-      location,
-      is_configured: true,
+      size,
+      weight_kg: weightKg,
+      fur_color: furColor,
+      neutered,
     })
     .eq('id', pet.id)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/painel')
+  return { success: true, data: undefined }
+}
+
+export async function updatePetContact(formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient()
+  const pet = await getOwnedPet(supabase)
+  if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
+
+  const ownerName = String(formData.get('owner_name') ?? '').trim() || null
+  const phone = String(formData.get('phone') ?? '').trim() || null
+
+  const { error } = await supabase
+    .from('pets')
+    .update({ owner_name: ownerName, phone })
+    .eq('id', pet.id)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/painel')
+  return { success: true, data: undefined }
+}
+
+export async function updatePetLocation(formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient()
+  const pet = await getOwnedPet(supabase)
+  if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
+
+  const location = String(formData.get('location') ?? '').trim() || null
+
+  const { error } = await supabase.from('pets').update({ location }).eq('id', pet.id)
 
   if (error) return { success: false, error: error.message }
 
@@ -77,6 +132,15 @@ export async function uploadPetPhoto(formData: FormData): Promise<ActionResult> 
     return { success: false, error: 'Selecione uma foto.' }
   }
 
+  const { count } = await supabase
+    .from('pet_photos')
+    .select('id', { count: 'exact', head: true })
+    .eq('pet_id', pet.id)
+
+  if ((count ?? 0) >= MAX_PET_PHOTOS) {
+    return { success: false, error: `Você já atingiu o limite de ${MAX_PET_PHOTOS} fotos.` }
+  }
+
   await ensurePetPhotosBucket()
 
   const ext = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
@@ -90,11 +154,6 @@ export async function uploadPetPhoto(formData: FormData): Promise<ActionResult> 
   if (uploadError) return { success: false, error: uploadError.message }
 
   const isWithOwner = formData.get('is_with_owner') === 'on'
-
-  const { count } = await supabase
-    .from('pet_photos')
-    .select('id', { count: 'exact', head: true })
-    .eq('pet_id', pet.id)
 
   const { error: insertError } = await supabase.from('pet_photos').insert({
     pet_id: pet.id,

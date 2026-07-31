@@ -24,13 +24,13 @@ export function LocationReporter({ slug }: { slug: string }) {
   if (!coords) return null
 
   return (
-    <section className="mx-auto mt-5 max-w-sm rounded-3xl border border-line bg-surface p-5">
-      <h2 className="mb-1 flex items-center gap-2 font-display text-base font-bold text-ink">
+    <div className="mt-6">
+      <h2 className="mb-1 flex items-center gap-2 font-display text-base font-bold text-pub-ink">
         <MapPin size={16} className="text-clay" />
         Sua localização
       </h2>
-      <p className="mb-3 text-sm text-ink-soft">Enviada ao tutor para ajudar a encontrar o pet.</p>
-      <div className="overflow-hidden rounded-2xl border border-line">
+      <p className="mb-3 text-sm text-pub-ink-soft">Enviada ao tutor para ajudar a encontrar o pet.</p>
+      <div className="overflow-hidden rounded-2xl">
         <iframe
           title="Sua localização"
           className="h-40 w-full"
@@ -38,6 +38,6 @@ export function LocationReporter({ slug }: { slug: string }) {
           src={`https://www.google.com/maps?q=${coords.lat},${coords.lng}&z=15&output=embed`}
         />
       </div>
-    </section>
+    </div>
   )
 }

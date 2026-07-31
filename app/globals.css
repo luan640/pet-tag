@@ -15,6 +15,17 @@
   --fern: #4d6a45;
   --fern-soft: #dfe8d7;
   --line: #ddd6bd;
+
+  /* Tela pública do pet — paleta própria */
+  --pub-bg: #e3d1c4;
+  --pub-surface: #fbf2e7;
+  --pub-ink: #2b2016;
+  --pub-ink-soft: #8c7867;
+  --pub-ink-faint: #b3a596;
+  --pub-line: #ecdfd2;
+  --pub-teal: #2f6f5c;
+  --pub-teal-soft: #d9ece2;
+  --pub-vaccine: #3fae5c;
 }
 
 @theme inline {
@@ -32,6 +43,17 @@
   --color-fern: var(--fern);
   --color-fern-soft: var(--fern-soft);
   --color-line: var(--line);
+
+  --color-pub-bg: var(--pub-bg);
+  --color-pub-surface: var(--pub-surface);
+  --color-pub-ink: var(--pub-ink);
+  --color-pub-ink-soft: var(--pub-ink-soft);
+  --color-pub-ink-faint: var(--pub-ink-faint);
+  --color-pub-line: var(--pub-line);
+  --color-pub-teal: var(--pub-teal);
+  --color-pub-teal-soft: var(--pub-teal-soft);
+  --color-pub-vaccine: var(--pub-vaccine);
+
   --font-display: var(--font-baloo);
   --font-body: var(--font-worksans);
 }

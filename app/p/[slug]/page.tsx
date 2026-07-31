@@ -3,13 +3,29 @@ import type { Metadata } from 'next'
 import { PawPrint, Phone, MessageCircle, MapPin, Heart, Syringe, LogIn, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getPetPhotoPublicUrl } from '@/lib/supabase/storage'
-import { calculateAgeLabel, formatDateShort, normalizePhoneForLink } from '@/lib/utils'
+import { calculateAgeDetailed, formatDateShort, normalizePhoneForLink } from '@/lib/utils'
 import { Logo } from '@/components/brand/logo'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { TagCard } from '@/components/pet/tag-card'
 import { PhotoCarousel } from '@/components/pet/photo-carousel'
 import { LocationReporter } from '@/components/pet/location-reporter'
+import { LastSeenMap } from '@/components/pet/last-seen-map'
+
+const SIZE_LABELS: Record<string, string> = { pequeno: 'Pequeno', medio: 'Médio', grande: 'Grande' }
+
+function speciesLabel(species: string): string {
+  if (species === 'cachorro') return 'Cão'
+  if (species === 'gato') return 'Gato'
+  return species.charAt(0).toUpperCase() + species.slice(1)
+}
+
+function sizeWeightLabel(size: string | null, weightKg: number | null): string {
+  const sizeLabel = size ? SIZE_LABELS[size] : null
+  const weightLabel = weightKg ? `${weightKg}kg` : null
+  if (sizeLabel && weightLabel) return `${sizeLabel} · ${weightLabel}`
+  return sizeLabel ?? weightLabel ?? '—'
+}
 
 async function getPet(slug: string) {
   const supabase = await createClient()
@@ -48,19 +64,26 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
-function TopBar() {
+function BottomBar() {
   return (
-    <header className="sticky top-0 z-20 border-b border-line/70 bg-bg/85 backdrop-blur">
-      <div className="mx-auto flex max-w-sm items-center justify-between px-5 py-3.5">
-        <Logo />
-        <Link href="/entrar">
-          <Button variant="outline" size="sm">
-            <LogIn size={14} />
-            Entrar
-          </Button>
-        </Link>
-      </div>
-    </header>
+    <div className="mx-auto flex w-full max-w-sm items-center justify-between px-6 py-6">
+      <Logo />
+      <Link href="/entrar">
+        <Button variant="outline" size="sm" className="border-pub-ink/15 text-pub-ink hover:bg-pub-ink/5">
+          <LogIn size={14} />
+          Entrar
+        </Button>
+      </Link>
+    </div>
+  )
+}
+
+function CharacteristicCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-pub-bg/40 px-4 py-3">
+      <p className="text-xs font-medium text-pub-ink-soft">{label}</p>
+      <p className="mt-0.5 text-sm font-bold text-pub-ink">{value}</p>
+    </div>
   )
 }
 
@@ -78,16 +101,16 @@ export default async function PetPublicPage({
 
   if (!result) {
     return (
-      <main className="flex min-h-dvh flex-col bg-bg">
-        <TopBar />
+      <main className="flex min-h-dvh flex-col bg-pub-bg">
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
           <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-clay-soft text-clay">
             <PawPrint size={28} />
           </span>
-          <h1 className="font-display text-xl font-bold text-ink">Identificação não encontrada</h1>
-          <p className="mt-2 max-w-xs text-sm text-ink-soft">
+          <h1 className="font-display text-xl font-bold text-pub-ink">Identificação não encontrada</h1>
+          <p className="mt-2 max-w-xs text-sm text-pub-ink-soft">
             Esse link não corresponde a nenhuma tag ativa. Confira se o endereço está correto.
           </p>
+          <BottomBar />
         </div>
       </main>
     )
@@ -97,23 +120,22 @@ export default async function PetPublicPage({
 
   if (!pet.is_configured) {
     return (
-      <main className="flex min-h-dvh flex-col bg-bg">
-        <TopBar />
+      <main className="flex min-h-dvh flex-col bg-pub-bg">
         <div className="flex flex-1 flex-col items-center justify-center px-5 py-10">
           <TagCard>
-            <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 bg-bg-warm px-8 text-center">
+            <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 bg-pub-bg/40 px-8 text-center">
               <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brass-soft text-brass">
                 <PawPrint size={30} />
               </span>
-              <h1 className="font-display text-xl font-bold text-ink">Quase pronta!</h1>
-              <p className="text-sm text-ink-soft">
+              <h1 className="font-display text-xl font-bold text-pub-ink">Quase pronta!</h1>
+              <p className="text-sm text-pub-ink-soft">
                 O tutor deste pet ainda está configurando essa identificação. Volte em breve.
               </p>
             </div>
           </TagCard>
 
-          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-line bg-surface p-4 text-center">
-            <p className="text-sm text-ink-soft">É você quem cuida desse pet?</p>
+          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-pub-line bg-pub-surface p-4 text-center">
+            <p className="text-sm text-pub-ink-soft">É você quem cuida desse pet?</p>
             <Link href="/entrar" className="mt-3 inline-block">
               <Button variant="cta">
                 <LogIn size={15} />
@@ -121,12 +143,15 @@ export default async function PetPublicPage({
               </Button>
             </Link>
           </div>
+
+          <BottomBar />
         </div>
       </main>
     )
   }
 
-  const ageLabel = calculateAgeLabel(pet.birth_date)
+  const ageLabel = calculateAgeDetailed(pet.birth_date)
+  const sexLabel = pet.sex ? (pet.sex === 'macho' ? 'Macho' : 'Fêmea') : '—'
   const whatsappLink = pet.phone ? `https://wa.me/${normalizePhoneForLink(pet.phone)}` : null
   const telLink = pet.phone ? `tel:${pet.phone.replace(/[^\d+]/g, '')}` : null
 
@@ -136,9 +161,7 @@ export default async function PetPublicPage({
     : null
 
   return (
-    <main className="flex min-h-dvh flex-col bg-bg pb-14">
-      <TopBar />
-
+    <main className="flex min-h-dvh flex-col bg-pub-bg">
       {pet.is_lost && (
         <div className="bg-red-600 px-5 py-4 text-white">
           <div className="mx-auto flex max-w-sm flex-col items-center gap-2 text-center">
@@ -167,107 +190,129 @@ export default async function PetPublicPage({
         </div>
       )}
 
-      <div className="px-5 py-8">
-        <TagCard>
-          {photos.length > 0 ? (
-            <PhotoCarousel photos={photos} petName={pet.name} />
-          ) : (
-            <div className="flex aspect-[4/5] items-center justify-center bg-bg-warm">
-              <PawPrint size={48} className="text-brass/60" />
+      <div className="w-full">
+        {photos.length > 0 ? (
+          <PhotoCarousel photos={photos} petName={pet.name} />
+        ) : (
+          <div className="flex aspect-[4/5] items-center justify-center bg-pub-bg">
+            <PawPrint size={48} className="text-pub-ink-faint" />
+          </div>
+        )}
+      </div>
+
+      <div className="bg-pub-surface px-5 pb-8 pt-6">
+        <div className="mx-auto max-w-sm">
+          <h1 className="font-display text-2xl font-bold text-pub-ink">{pet.name}</h1>
+
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <Badge variant="clay">{speciesLabel(pet.species)}</Badge>
+            {pet.breed && <Badge className="bg-pub-teal-soft text-pub-teal">{pet.breed}</Badge>}
+          </div>
+
+          {pet.allergies && (
+            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-3">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0 text-red-600" />
+              <p className="text-sm text-red-700">
+                <span className="font-semibold">Alergias:</span> {pet.allergies}
+              </p>
             </div>
           )}
 
-          <div className="px-5 pb-6 pt-4">
-            <h1 className="font-display text-2xl font-bold text-ink">{pet.name}</h1>
+          <h2 className="mb-3 mt-5 font-display text-base font-bold text-pub-ink">Características</h2>
+          <div className="grid grid-cols-2 gap-2.5">
+            <CharacteristicCard label="Nascimento" value={pet.birth_date ? formatDateShort(pet.birth_date) : '—'} />
+            <CharacteristicCard label="Idade" value={ageLabel ?? '—'} />
+            <CharacteristicCard label="Sexo" value={sexLabel} />
+            <CharacteristicCard label="Porte / Peso" value={sizeWeightLabel(pet.size, pet.weight_kg)} />
+            <CharacteristicCard label="Cor da pelagem" value={pet.fur_color ?? '—'} />
+            <CharacteristicCard
+              label="Castrado(a)"
+              value={pet.neutered === null ? '—' : pet.neutered ? 'Sim' : 'Não'}
+            />
+          </div>
 
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {ageLabel && <Badge>{ageLabel}</Badge>}
-              {pet.breed && <Badge variant="neutral">{pet.breed}</Badge>}
-              {pet.sex && <Badge variant="neutral">{pet.sex === 'macho' ? 'Macho' : 'Fêmea'}</Badge>}
+          {pet.bio && (
+            <div className="mt-6">
+              <h2 className="mb-2 font-display text-base font-bold text-pub-ink">Sobre {pet.name}</h2>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-pub-ink-soft">{pet.bio}</p>
+            </div>
+          )}
+
+          {vaccines.length > 0 && (
+            <div className="mt-6">
+              <h2 className="mb-1 flex items-center gap-2 font-display text-base font-bold text-pub-ink">
+                <Syringe size={16} className="text-pub-vaccine" />
+                Registro de vacinas
+              </h2>
+              <div className="flex flex-col divide-y divide-pub-line">
+                {vaccines.map((vaccine) => (
+                  <div key={vaccine.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <span className="flex items-center gap-2 text-sm font-medium text-pub-ink">
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-pub-vaccine" />
+                      {vaccine.name}
+                    </span>
+                    {vaccine.applied_date && (
+                      <span className="shrink-0 text-sm text-pub-ink-soft">{formatDateShort(vaccine.applied_date)}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6">
+            <h2 className="mb-1 font-display text-base font-bold text-pub-ink">Encontrou {pet.name}?</h2>
+            <p className="mb-4 text-sm text-pub-ink-soft">Entre em contato com o tutor, ele está te esperando.</p>
+
+            <div className="flex flex-col gap-1.5 text-sm text-pub-ink-soft">
+              {pet.owner_name && (
+                <p className="flex items-center gap-2">
+                  <Heart size={14} className="shrink-0 text-clay" /> {pet.owner_name}
+                </p>
+              )}
+              {pet.location && (
+                <p className="flex items-center gap-2">
+                  <MapPin size={14} className="shrink-0 text-clay" /> {pet.location}
+                </p>
+              )}
             </div>
 
-            {pet.birth_date && (
-              <p className="mt-2 text-sm text-ink-soft">
-                Nasceu em {formatDateShort(pet.birth_date)}
-                {ageLabel && ` · ${ageLabel}`}
-              </p>
-            )}
-
-            {pet.allergies && (
-              <div className="mt-4 flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-3">
-                <AlertTriangle size={16} className="mt-0.5 shrink-0 text-red-600" />
-                <p className="text-sm text-red-700">
-                  <span className="font-semibold">Alergias:</span> {pet.allergies}
-                </p>
+            {(telLink || whatsappLink) && (
+              <div className="mt-4 flex flex-col gap-2">
+                {telLink && (
+                  <a href={telLink}>
+                    <Button variant="cta" size="lg" fullWidth>
+                      <Phone size={16} />
+                      Ligar para o tutor
+                    </Button>
+                  </a>
+                )}
+                {whatsappLink && (
+                  <a href={whatsappLink} target="_blank" rel="noreferrer">
+                    <Button variant="primary" size="lg" fullWidth>
+                      <MessageCircle size={16} />
+                      Chamar no WhatsApp
+                    </Button>
+                  </a>
+                )}
               </div>
             )}
-
-            {pet.bio && <p className="mt-4 text-sm leading-relaxed text-ink-soft">{pet.bio}</p>}
-          </div>
-        </TagCard>
-
-        {vaccines.length > 0 && (
-          <section className="mx-auto mt-5 max-w-sm rounded-3xl border border-line bg-surface p-5">
-            <h2 className="mb-3 flex items-center gap-2 font-display text-base font-bold text-ink">
-              <Syringe size={16} className="text-fern" />
-              Vacinas em dia
-            </h2>
-            <div className="flex flex-wrap gap-1.5">
-              {vaccines.map((vaccine) => (
-                <Badge key={vaccine.id} variant="success">
-                  {vaccine.name}
-                  {vaccine.applied_date ? ` · ${formatDateShort(vaccine.applied_date)}` : ''}
-                </Badge>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section className="mx-auto mt-5 max-w-sm rounded-3xl border border-line bg-surface p-5">
-          <h2 className="mb-1 font-display text-base font-bold text-ink">Encontrou {pet.name}?</h2>
-          <p className="mb-4 text-sm text-ink-soft">Entre em contato com o tutor, ele está te esperando.</p>
-
-          <div className="flex flex-col gap-1.5 text-sm text-ink-soft">
-            {pet.owner_name && (
-              <p className="flex items-center gap-2">
-                <Heart size={14} className="shrink-0 text-clay" /> {pet.owner_name}
-              </p>
-            )}
-            {pet.location && (
-              <p className="flex items-center gap-2">
-                <MapPin size={14} className="shrink-0 text-clay" /> {pet.location}
-              </p>
-            )}
           </div>
 
-          {(telLink || whatsappLink) && (
-            <div className="mt-4 flex flex-col gap-2">
-              {telLink && (
-                <a href={telLink}>
-                  <Button variant="cta" size="lg" fullWidth>
-                    <Phone size={16} />
-                    Ligar para o tutor
-                  </Button>
-                </a>
-              )}
-              {whatsappLink && (
-                <a href={whatsappLink} target="_blank" rel="noreferrer">
-                  <Button variant="primary" size="lg" fullWidth>
-                    <MessageCircle size={16} />
-                    Chamar no WhatsApp
-                  </Button>
-                </a>
-              )}
-            </div>
+          {fromTag ? (
+            <LocationReporter slug={pet.slug} />
+          ) : (
+            pet.last_seen_lat != null &&
+            pet.last_seen_lng != null && <LastSeenMap lat={pet.last_seen_lat} lng={pet.last_seen_lng} />
           )}
-        </section>
 
-        {fromTag && <LocationReporter slug={pet.slug} />}
-
-        <p className="mx-auto mt-6 max-w-sm text-center text-xs text-ink-faint">
-          Identificação digital via PetTag · aproxime o celular na coleira para ver esta página
-        </p>
+          <p className="mt-6 text-center text-xs text-pub-ink-faint">
+            Identificação digital via PetTag · aproxime o celular na coleira para ver esta página
+          </p>
+        </div>
       </div>
+
+      <BottomBar />
     </main>
   )
 }

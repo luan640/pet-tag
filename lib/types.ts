@@ -10,6 +10,7 @@ export interface Profile {
 }
 
 export type PetSex = 'macho' | 'femea'
+export type PetSize = 'pequeno' | 'medio' | 'grande'
 
 export interface Pet {
   id: string
@@ -22,6 +23,10 @@ export interface Pet {
   birth_date: string | null
   bio: string | null
   allergies: string | null
+  size: PetSize | null
+  weight_kg: number | null
+  fur_color: string | null
+  neutered: boolean | null
   owner_name: string | null
   phone: string | null
   location: string | null
