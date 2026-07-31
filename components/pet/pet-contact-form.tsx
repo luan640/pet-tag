@@ -12,13 +12,13 @@ const fieldClasses =
   'border-pub-line bg-white text-pub-ink placeholder:text-pub-ink-faint focus-visible:border-pub-teal focus-visible:ring-pub-teal/15'
 const labelClasses = 'text-pub-ink-soft'
 
-export function PetContactForm({ pet }: { pet: Pet }) {
+export function PetContactForm({ petId, pet }: { petId: string; pet: Pet }) {
   const { success: showSuccess, error: showError } = useToast()
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const result = await updatePetContact(new FormData(event.currentTarget))
+    const result = await updatePetContact(petId, new FormData(event.currentTarget))
 
     if (!result.success) {
       showError('Não foi possível salvar.', result.error)

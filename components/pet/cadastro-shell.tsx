@@ -1,6 +1,6 @@
 import { CadastroBottomBar } from '@/components/pet/cadastro-bottom-bar'
 
-export function CadastroShell({ children }: { children: React.ReactNode }) {
+export function CadastroShell({ children, petId }: { children: React.ReactNode; petId: string }) {
   return (
     <div className="flex min-h-dvh flex-col bg-pub-bg">
       <div className="flex-1 px-5 pb-6 pt-8">
@@ -11,7 +11,7 @@ export function CadastroShell({ children }: { children: React.ReactNode }) {
         <div className="mt-6">{children}</div>
       </div>
 
-      <CadastroBottomBar />
+      <CadastroBottomBar petId={petId} />
     </div>
   )
 }

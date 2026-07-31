@@ -50,10 +50,10 @@ export function PetRow({ pet, publicUrl, tagUrl }: { pet: PetListRow; publicUrl:
         <p className="mt-0.5 truncate font-mono text-xs text-ink-faint">/p/{pet.slug}</p>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex flex-wrap shrink-0 items-center gap-2 sm:flex-nowrap">
         <Button variant="ghost" size="sm" onClick={handleCopy}>
           {copied ? <Check size={15} className="text-fern" /> : <Copy size={15} />}
-          {copied ? 'Copiado' : 'Copiar link da tag'}
+          {copied ? 'Copiado' : 'Copiar link'}
         </Button>
         <a href={publicUrl} target="_blank" rel="noreferrer">
           <Button variant="ghost" size="icon" aria-label="Abrir página pública">

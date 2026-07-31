@@ -15,7 +15,7 @@ import type { PetVaccine } from '@/lib/types'
 const fieldClasses =
   'border-pub-line bg-white text-pub-ink placeholder:text-pub-ink-faint focus-visible:border-pub-teal focus-visible:ring-pub-teal/15'
 
-export function VaccinesManager({ vaccines }: { vaccines: PetVaccine[] }) {
+export function VaccinesManager({ petId, vaccines }: { petId: string; vaccines: PetVaccine[] }) {
   const router = useRouter()
   const { success: showSuccess, error: showError } = useToast()
   const [open, setOpen] = useState(false)
@@ -28,7 +28,7 @@ export function VaccinesManager({ vaccines }: { vaccines: PetVaccine[] }) {
     event.preventDefault()
     setLoading(true)
 
-    const result = await addVaccine(new FormData(event.currentTarget))
+    const result = await addVaccine(petId, new FormData(event.currentTarget))
 
     setLoading(false)
     if (!result.success) {

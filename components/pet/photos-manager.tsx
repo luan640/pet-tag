@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/toaster'
 import { MAX_PET_PHOTOS } from '@/lib/constants'
 import type { PetPhoto } from '@/lib/types'
 
-export function PhotosManager({ photos }: { photos: PetPhoto[] }) {
+export function PhotosManager({ petId, photos }: { petId: string; photos: PetPhoto[] }) {
   const router = useRouter()
   const { success: showSuccess, error: showError } = useToast()
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
@@ -21,7 +21,7 @@ export function PhotosManager({ photos }: { photos: PetPhoto[] }) {
 
     const formData = new FormData()
     formData.set('photo', file)
-    const result = await uploadPetPhoto(formData)
+    const result = await uploadPetPhoto(petId, formData)
 
     setUploadingIndex(null)
     if (!result.success) {

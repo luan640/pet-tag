@@ -5,19 +5,20 @@ import { PetLocationForm } from '@/components/pet/pet-location-form'
 import { LostToggle } from '@/components/pet/lost-toggle'
 import { Button } from '@/components/ui/button'
 
-export default async function CadastroLocalizacaoPage() {
+export default async function CadastroLocalizacaoPage({ params }: { params: Promise<{ petId: string }> }) {
+  const { petId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/entrar')
 
-  const { data: pet } = await supabase.from('pets').select('*').eq('owner_id', user.id).single()
-  if (!pet) redirect('/entrar')
+  const { data: pet } = await supabase.from('pets').select('*').eq('owner_id', user.id).eq('id', petId).single()
+  if (!pet) redirect('/painel')
 
   return (
     <div className="flex flex-col gap-5">
-      <PetLocationForm pet={pet} />
+      <PetLocationForm petId={pet.id} pet={pet} />
 
-      <LostToggle petName={pet.name} isLost={pet.is_lost} />
+      <LostToggle petId={pet.id} petName={pet.name} isLost={pet.is_lost} />
 
       {pet.last_seen_at && pet.last_seen_lat != null && pet.last_seen_lng != null && (
         <div className="flex items-center justify-between gap-3 rounded-2xl bg-white p-4">

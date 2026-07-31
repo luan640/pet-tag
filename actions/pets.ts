@@ -7,17 +7,26 @@ import { ensurePetPhotosBucket, PET_PHOTOS_BUCKET } from '@/lib/supabase/storage
 import { MAX_PET_PHOTOS } from '@/lib/constants'
 import type { ActionResult, PetSex, PetSize } from '@/lib/types'
 
-async function getOwnedPet(supabase: Awaited<ReturnType<typeof createClient>>) {
+async function getOwnedPet(supabase: Awaited<ReturnType<typeof createClient>>, petId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: pet } = await supabase.from('pets').select('id').eq('owner_id', user.id).single()
+  const { data: pet } = await supabase.from('pets').select('id').eq('owner_id', user.id).eq('id', petId).single()
   return pet
 }
 
-export async function updatePetIdentity(formData: FormData): Promise<ActionResult> {
+/** For actions keyed by a child row (photo/vaccine) rather than a petId param. */
+async function ownsPetOfChild(supabase: Awaited<ReturnType<typeof createClient>>, petId: string): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const { data } = await supabase.from('pets').select('id').eq('id', petId).eq('owner_id', user.id).single()
+  return !!data
+}
+
+export async function updatePetIdentity(petId: string, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
-  const pet = await getOwnedPet(supabase)
+  const pet = await getOwnedPet(supabase, petId)
   if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
 
   const name = String(formData.get('name') ?? '').trim()
@@ -33,13 +42,13 @@ export async function updatePetIdentity(formData: FormData): Promise<ActionResul
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/painel')
+  revalidatePath(`/painel/${petId}`)
   return { success: true, data: undefined }
 }
 
-export async function updatePetCharacteristics(formData: FormData): Promise<ActionResult> {
+export async function updatePetCharacteristics(petId: string, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
-  const pet = await getOwnedPet(supabase)
+  const pet = await getOwnedPet(supabase, petId)
   if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
 
   const sexRaw = String(formData.get('sex') ?? '')
@@ -71,13 +80,13 @@ export async function updatePetCharacteristics(formData: FormData): Promise<Acti
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/painel')
+  revalidatePath(`/painel/${petId}`)
   return { success: true, data: undefined }
 }
 
-export async function updatePetContact(formData: FormData): Promise<ActionResult> {
+export async function updatePetContact(petId: string, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
-  const pet = await getOwnedPet(supabase)
+  const pet = await getOwnedPet(supabase, petId)
   if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
 
   const ownerName = String(formData.get('owner_name') ?? '').trim() || null
@@ -90,13 +99,13 @@ export async function updatePetContact(formData: FormData): Promise<ActionResult
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/painel')
+  revalidatePath(`/painel/${petId}`)
   return { success: true, data: undefined }
 }
 
-export async function updatePetLocation(formData: FormData): Promise<ActionResult> {
+export async function updatePetLocation(petId: string, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
-  const pet = await getOwnedPet(supabase)
+  const pet = await getOwnedPet(supabase, petId)
   if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
 
   const location = String(formData.get('location') ?? '').trim() || null
@@ -105,26 +114,26 @@ export async function updatePetLocation(formData: FormData): Promise<ActionResul
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/painel')
+  revalidatePath(`/painel/${petId}`)
   return { success: true, data: undefined }
 }
 
-export async function setLostStatus(isLost: boolean): Promise<ActionResult> {
+export async function setLostStatus(petId: string, isLost: boolean): Promise<ActionResult> {
   const supabase = await createClient()
-  const pet = await getOwnedPet(supabase)
+  const pet = await getOwnedPet(supabase, petId)
   if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
 
   const { error } = await supabase.from('pets').update({ is_lost: isLost }).eq('id', pet.id)
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/painel')
+  revalidatePath(`/painel/${petId}`)
   revalidatePath('/p/[slug]', 'page')
   return { success: true, data: undefined }
 }
 
-export async function uploadPetPhoto(formData: FormData): Promise<ActionResult> {
+export async function uploadPetPhoto(petId: string, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
-  const pet = await getOwnedPet(supabase)
+  const pet = await getOwnedPet(supabase, petId)
   if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
 
   const file = formData.get('photo')
@@ -164,14 +173,12 @@ export async function uploadPetPhoto(formData: FormData): Promise<ActionResult> 
 
   if (insertError) return { success: false, error: insertError.message }
 
-  revalidatePath('/painel')
+  revalidatePath(`/painel/${petId}`)
   return { success: true, data: undefined }
 }
 
 export async function deletePetPhoto(photoId: string): Promise<ActionResult> {
   const supabase = await createClient()
-  const pet = await getOwnedPet(supabase)
-  if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
 
   const { data: photo } = await supabase
     .from('pet_photos')
@@ -179,7 +186,7 @@ export async function deletePetPhoto(photoId: string): Promise<ActionResult> {
     .eq('id', photoId)
     .single()
 
-  if (!photo || photo.pet_id !== pet.id) {
+  if (!photo || !(await ownsPetOfChild(supabase, photo.pet_id))) {
     return { success: false, error: 'Foto não encontrada.' }
   }
 
@@ -188,7 +195,7 @@ export async function deletePetPhoto(photoId: string): Promise<ActionResult> {
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/painel')
+  revalidatePath(`/painel/${photo.pet_id}`)
   return { success: true, data: undefined }
 }
 
@@ -204,9 +211,9 @@ export async function reportPetLocation(slug: string, lat: number, lng: number):
   return { success: true, data: undefined }
 }
 
-export async function addVaccine(formData: FormData): Promise<ActionResult> {
+export async function addVaccine(petId: string, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
-  const pet = await getOwnedPet(supabase)
+  const pet = await getOwnedPet(supabase, petId)
   if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
 
   const name = String(formData.get('name') ?? '').trim()
@@ -226,23 +233,27 @@ export async function addVaccine(formData: FormData): Promise<ActionResult> {
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/painel')
+  revalidatePath(`/painel/${petId}`)
   return { success: true, data: undefined }
 }
 
 export async function deleteVaccine(vaccineId: string): Promise<ActionResult> {
   const supabase = await createClient()
-  const pet = await getOwnedPet(supabase)
-  if (!pet) return { success: false, error: 'Sessão inválida. Faça login novamente.' }
 
-  const { error } = await supabase
+  const { data: vaccine } = await supabase
     .from('pet_vaccines')
-    .delete()
+    .select('id, pet_id')
     .eq('id', vaccineId)
-    .eq('pet_id', pet.id)
+    .single()
+
+  if (!vaccine || !(await ownsPetOfChild(supabase, vaccine.pet_id))) {
+    return { success: false, error: 'Vacina não encontrada.' }
+  }
+
+  const { error } = await supabase.from('pet_vaccines').delete().eq('id', vaccineId)
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/painel')
+  revalidatePath(`/painel/${vaccine.pet_id}`)
   return { success: true, data: undefined }
 }

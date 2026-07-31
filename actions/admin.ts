@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { findAuthUserByEmail } from '@/lib/supabase/auth-admin'
 import { slugify, generateSlugSuffix, generateTempPassword } from '@/lib/utils'
 import type { ActionResult, NewTagCredentials, PetListRow } from '@/lib/types'
 
@@ -33,33 +34,54 @@ export async function createPetTag(formData: FormData): Promise<ActionResult<New
   }
 
   const login = ownerEmailInput || `${slug}@pet.local`
-  const tempPassword = generateTempPassword()
 
-  const { data: userData, error: userError } = await admin.auth.admin.createUser({
-    email: login,
-    password: tempPassword,
-    email_confirm: true,
-    user_metadata: { role: 'owner' },
-  })
+  const existingUser = ownerEmailInput ? await findAuthUserByEmail(ownerEmailInput) : null
 
-  if (userError || !userData.user) {
-    if (userError?.message?.toLowerCase().includes('already') || userError?.code === 'email_exists') {
-      return { success: false, error: 'Já existe uma conta com esse e-mail. Use outro e-mail ou deixe em branco para gerar um login automático.' }
+  let ownerId: string
+  let tempPassword: string | null = null
+  const reusedExistingAccount = !!existingUser
+
+  if (existingUser) {
+    const { data: existingProfile } = await admin
+      .from('profiles')
+      .select('role')
+      .eq('id', existingUser.id)
+      .single()
+
+    if (!existingProfile || existingProfile.role !== 'owner') {
+      return { success: false, error: 'Esse e-mail já está em uso por uma conta que não é de tutor.' }
     }
-    return { success: false, error: userError?.message ?? 'Erro ao criar conta do tutor.' }
-  }
 
-  const ownerId = userData.user.id
+    ownerId = existingUser.id
+  } else {
+    tempPassword = generateTempPassword()
 
-  const { error: profileError } = await admin.from('profiles').insert({
-    id: ownerId,
-    role: 'owner',
-    must_change_password: true,
-  })
+    const { data: userData, error: userError } = await admin.auth.admin.createUser({
+      email: login,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: { role: 'owner' },
+    })
 
-  if (profileError) {
-    await admin.auth.admin.deleteUser(ownerId)
-    return { success: false, error: 'Não foi possível criar o perfil do tutor: ' + profileError.message }
+    if (userError || !userData.user) {
+      if (userError?.message?.toLowerCase().includes('already') || userError?.code === 'email_exists') {
+        return { success: false, error: 'Já existe uma conta com esse e-mail. Use outro e-mail ou deixe em branco para gerar um login automático.' }
+      }
+      return { success: false, error: userError?.message ?? 'Erro ao criar conta do tutor.' }
+    }
+
+    ownerId = userData.user.id
+
+    const { error: profileError } = await admin.from('profiles').insert({
+      id: ownerId,
+      role: 'owner',
+      must_change_password: true,
+    })
+
+    if (profileError) {
+      await admin.auth.admin.deleteUser(ownerId)
+      return { success: false, error: 'Não foi possível criar o perfil do tutor: ' + profileError.message }
+    }
   }
 
   const { error: petError } = await admin.from('pets').insert({
@@ -71,8 +93,10 @@ export async function createPetTag(formData: FormData): Promise<ActionResult<New
   })
 
   if (petError) {
-    await admin.from('profiles').delete().eq('id', ownerId)
-    await admin.auth.admin.deleteUser(ownerId)
+    if (!reusedExistingAccount) {
+      await admin.from('profiles').delete().eq('id', ownerId)
+      await admin.auth.admin.deleteUser(ownerId)
+    }
     return { success: false, error: 'Não foi possível criar o registro do pet: ' + petError.message }
   }
 
@@ -84,6 +108,7 @@ export async function createPetTag(formData: FormData): Promise<ActionResult<New
       login,
       tempPassword,
       petName,
+      reusedExistingAccount,
     },
   }
 }

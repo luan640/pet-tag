@@ -81,6 +81,7 @@ export interface NewTagCredentials {
   slug: string
   publicUrl: string
   login: string
-  tempPassword: string
+  tempPassword: string | null
   petName: string
+  reusedExistingAccount: boolean
 }

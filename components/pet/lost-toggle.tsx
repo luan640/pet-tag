@@ -6,13 +6,21 @@ import { setLostStatus } from '@/actions/pets'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toaster'
 
-export function LostToggle({ petName, isLost }: { petName: string; isLost: boolean }) {
+export function LostToggle({
+  petId,
+  petName,
+  isLost,
+}: {
+  petId: string
+  petName: string
+  isLost: boolean
+}) {
   const { success: showSuccess, error: showError } = useToast()
   const [loading, setLoading] = useState(false)
 
   async function handleToggle() {
     setLoading(true)
-    const result = await setLostStatus(!isLost)
+    const result = await setLostStatus(petId, !isLost)
     setLoading(false)
 
     if (!result.success) {

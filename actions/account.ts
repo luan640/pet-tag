@@ -102,7 +102,10 @@ export async function completeFirstAccess(formData: FormData): Promise<ActionRes
     .from('pets')
     .select('id')
     .eq('owner_id', user.id)
-    .single()
+    .eq('is_configured', false)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
 
   if (petFetchError || !pet) {
     return { success: false, error: 'Não encontramos o pet vinculado a esta conta.' }
@@ -170,5 +173,5 @@ export async function completeFirstAccess(formData: FormData): Promise<ActionRes
 
   await supabase.from('profiles').update({ must_change_password: false }).eq('id', user.id)
 
-  redirect('/painel?bem-vindo=1')
+  redirect(`/painel/${pet.id}?bem-vindo=1`)
 }

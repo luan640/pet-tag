@@ -8,17 +8,20 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { CADASTRO_FORM_ID } from '@/components/pet/cadastro-form-id'
 
-const TABS = [
-  { href: '/painel', label: 'Pet' },
-  { href: '/painel/cadastro/caracteristicas', label: 'Características' },
-  { href: '/painel/cadastro/vacinas', label: 'Vacinas' },
-  { href: '/painel/cadastro/contato', label: 'Contato' },
-  { href: '/painel/cadastro/localizacao', label: 'Localização' },
-] as const
+function buildTabs(petId: string) {
+  return [
+    { href: `/painel/${petId}`, label: 'Pet' },
+    { href: `/painel/${petId}/caracteristicas`, label: 'Características' },
+    { href: `/painel/${petId}/vacinas`, label: 'Vacinas' },
+    { href: `/painel/${petId}/contato`, label: 'Contato' },
+    { href: `/painel/${petId}/localizacao`, label: 'Localização' },
+  ] as const
+}
 
-export function CadastroBottomBar() {
+export function CadastroBottomBar({ petId }: { petId: string }) {
   const pathname = usePathname()
-  const showSaveButton = pathname !== '/painel/cadastro/vacinas'
+  const TABS = buildTabs(petId)
+  const showSaveButton = pathname !== `/painel/${petId}/vacinas`
   const scrollRef = useRef<HTMLDivElement>(null)
   const activeRef = useRef<HTMLAnchorElement>(null)
 

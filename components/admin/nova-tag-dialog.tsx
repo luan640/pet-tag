@@ -135,8 +135,17 @@ export function NovaTagDialog() {
 
             <div className="flex flex-col gap-3">
               <CopyField label="Link público (grave na tag NFC)" value={credentials.publicUrl} />
-              <CopyField label="Login do tutor" value={credentials.login} />
-              <CopyField label="Senha temporária" value={credentials.tempPassword} />
+              {credentials.reusedExistingAccount ? (
+                <p className="rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink-soft">
+                  Vinculado à conta existente: <span className="font-mono text-ink">{credentials.login}</span> — a senha
+                  atual do tutor continua valendo.
+                </p>
+              ) : (
+                <>
+                  <CopyField label="Login do tutor" value={credentials.login} />
+                  <CopyField label="Senha temporária" value={credentials.tempPassword ?? ''} />
+                </>
+              )}
             </div>
 
             <Button variant="primary" size="lg" fullWidth className="mt-5" onClick={() => handleClose(false)}>
