@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { findAuthUserByEmail } from '@/lib/supabase/auth-admin'
 import { slugify, generateSlugSuffix, generateTempPassword } from '@/lib/utils'
+import { sendNewTagCredentialsEmail } from '@/lib/email'
 import type { ActionResult, NewTagCredentials, PetListRow } from '@/lib/types'
 
 function appUrl() {
@@ -100,15 +101,30 @@ export async function createPetTag(formData: FormData): Promise<ActionResult<New
     return { success: false, error: 'Não foi possível criar o registro do pet: ' + petError.message }
   }
 
+  const publicUrl = `${appUrl()}/p/${slug}?src=tag`
+  let emailSent = false
+
+  if (ownerEmailInput && tempPassword) {
+    const result = await sendNewTagCredentialsEmail({
+      to: ownerEmailInput,
+      petName,
+      publicUrl,
+      login,
+      tempPassword,
+    })
+    emailSent = result.success
+  }
+
   return {
     success: true,
     data: {
       slug,
-      publicUrl: `${appUrl()}/p/${slug}?src=tag`,
+      publicUrl,
       login,
       tempPassword,
       petName,
       reusedExistingAccount,
+      emailSent,
     },
   }
 }

@@ -3,8 +3,10 @@
 import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ensurePetPhotosBucket, PET_PHOTOS_BUCKET } from '@/lib/supabase/storage'
 import { MAX_PET_PHOTOS } from '@/lib/constants'
+import { sendLocationReportedEmail } from '@/lib/email'
 import type { ActionResult, PetSex, PetSize } from '@/lib/types'
 
 async function getOwnedPet(supabase: Awaited<ReturnType<typeof createClient>>, petId: string) {
@@ -208,7 +210,38 @@ export async function reportPetLocation(slug: string, lat: number, lng: number):
   const { error } = await supabase.rpc('report_pet_location', { p_slug: slug, p_lat: lat, p_lng: lng })
 
   if (error) return { success: false, error: error.message }
+
+  notifyOwnerOfLocation(slug, lat, lng).catch((err) => {
+    console.error('[reportPetLocation] falha ao notificar tutor por e-mail:', err)
+  })
+
   return { success: true, data: undefined }
+}
+
+async function notifyOwnerOfLocation(slug: string, lat: number, lng: number): Promise<void> {
+  const admin = createAdminClient()
+
+  const { data: pet } = await admin
+    .from('pets')
+    .select('id, name, owner_id, is_lost')
+    .eq('slug', slug)
+    .eq('active', true)
+    .single()
+
+  if (!pet) return
+
+  const { data: userData } = await admin.auth.admin.getUserById(pet.owner_id)
+  const ownerEmail = userData?.user?.email
+  if (!ownerEmail) return
+
+  await sendLocationReportedEmail({
+    to: ownerEmail,
+    petName: pet.name,
+    petSlug: slug,
+    lat,
+    lng,
+    isLost: pet.is_lost,
+  })
 }
 
 export async function addVaccine(petId: string, formData: FormData): Promise<ActionResult> {
@@ -234,6 +267,37 @@ export async function addVaccine(petId: string, formData: FormData): Promise<Act
   if (error) return { success: false, error: error.message }
 
   revalidatePath(`/painel/${petId}`)
+  return { success: true, data: undefined }
+}
+
+export async function updateVaccine(vaccineId: string, formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient()
+
+  const { data: vaccine } = await supabase
+    .from('pet_vaccines')
+    .select('id, pet_id')
+    .eq('id', vaccineId)
+    .single()
+
+  if (!vaccine || !(await ownsPetOfChild(supabase, vaccine.pet_id))) {
+    return { success: false, error: 'Vacina não encontrada.' }
+  }
+
+  const name = String(formData.get('name') ?? '').trim()
+  if (!name) return { success: false, error: 'Informe o nome da vacina.' }
+
+  const appliedDate = String(formData.get('applied_date') ?? '').trim() || null
+  const nextDueDate = String(formData.get('next_due_date') ?? '').trim() || null
+  const notes = String(formData.get('notes') ?? '').trim() || null
+
+  const { error } = await supabase
+    .from('pet_vaccines')
+    .update({ name, applied_date: appliedDate, next_due_date: nextDueDate, notes })
+    .eq('id', vaccineId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(`/painel/${vaccine.pet_id}`)
   return { success: true, data: undefined }
 }
 

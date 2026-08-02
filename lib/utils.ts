@@ -86,3 +86,22 @@ export function normalizePhoneForLink(phone: string): string {
   if (digits.startsWith('55')) return digits
   return `55${digits}`
 }
+
+export type VaccineDueStatus = 'overdue' | 'soon' | 'ok' | 'none'
+
+const VACCINE_SOON_WINDOW_DAYS = 30
+
+export function getVaccineDueStatus(nextDueDateStr: string | null): VaccineDueStatus {
+  if (!nextDueDateStr) return 'none'
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(nextDueDateStr) ? `${nextDueDateStr}T00:00:00` : nextDueDateStr
+  const dueDate = new Date(normalized)
+  if (Number.isNaN(dueDate.getTime())) return 'none'
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((dueDate.getTime() - today.getTime()) / 86_400_000)
+
+  if (diffDays < 0) return 'overdue'
+  if (diffDays <= VACCINE_SOON_WINDOW_DAYS) return 'soon'
+  return 'ok'
+}

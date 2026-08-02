@@ -34,11 +34,11 @@ Crie um projeto em [supabase.com](https://supabase.com). Em **Project Settings �
 Copie `.env.example` para `.env.local` e preencha essas variáveis, junto com
 `NEXT_PUBLIC_APP_URL` (em produção, a URL do seu domínio na Vercel).
 
-### 2. Rodar a migration
+### 2. Rodar as migrations
 
-No **SQL Editor** do Supabase Studio, cole e execute o conteúdo de
-`supabase/migrations/001_initial.sql`. Isso cria as tabelas, RLS, o bucket de storage
-`pet-photos` e as políticas de acesso.
+No **SQL Editor** do Supabase Studio, cole e execute o conteúdo de cada arquivo em
+`supabase/migrations/`, em ordem (`001_initial.sql`, `002_...`, `003_...`, `004_...`). Isso
+cria as tabelas, RLS, o bucket de storage `pet-photos` e as políticas de acesso.
 
 (Alternativamente, com a [Supabase CLI](https://supabase.com/docs/guides/cli) instalada e o
 projeto linkado: `supabase db push`.)
@@ -67,6 +67,33 @@ Acesse `http://localhost:3000`, entre em `/entrar` com a conta de admin criada n
 2. Configure as mesmas variáveis de ambiente do `.env.local` nas configurações do projeto
    na Vercel (`NEXT_PUBLIC_APP_URL` deve ser a URL final de produção).
 3. Deploy. A partir daí, todo link gerado em `/admin` já aponta para o domínio de produção.
+
+### 6. E-mails transacionais (Resend)
+
+O app usa [Resend](https://resend.com) para 3 e-mails automáticos:
+
+- **Localização reportada**: quando alguém abre a página pública e o celular envia a
+  localização, o tutor recebe um e-mail com o link pro mapa (destaque extra se o pet
+  estiver marcado como perdido).
+- **Credenciais da nova tag**: se o e-mail do tutor for informado ao criar a tag em
+  `/admin`, ele já recebe login e senha temporária por e-mail (além de aparecerem na tela).
+- **Lembrete de vacina**: um cron diário (`/api/cron/vaccine-reminders`, configurado em
+  `vercel.json`) avisa o tutor por e-mail quando uma vacina está atrasada ou vence nos
+  próximos 30 dias. Cada vacina só gera um novo lembrete a cada 7 dias, pra não spammar.
+
+Configuração:
+
+1. Crie uma conta em [resend.com](https://resend.com) e gere uma API key.
+2. Preencha `RESEND_API_KEY` no `.env.local` (e nas env vars da Vercel em produção).
+3. **Sem domínio verificado no Resend**, o plano free só entrega e-mails para o endereço
+   cadastrado na sua própria conta Resend — útil pra testar, mas não envia pros tutores de
+   verdade. Para isso, verifique um domínio em **Resend > Domains** e ajuste
+   `RESEND_FROM_EMAIL` para um remetente desse domínio (ex: `PetTag <avisos@seudominio.com>`).
+4. Gere um valor aleatório para `CRON_SECRET` (ex: `openssl rand -hex 32`) e configure a
+   mesma variável no projeto na Vercel — ela autentica as chamadas do cron automaticamente
+   (a Vercel envia `Authorization: Bearer $CRON_SECRET` sozinha).
+5. Sem `RESEND_API_KEY` configurada, os e-mails simplesmente não são enviados (fica um aviso
+   no log) — o resto do app funciona normalmente.
 
 ## Fluxo de uso do dia a dia
 

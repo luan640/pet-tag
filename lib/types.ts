@@ -57,6 +57,7 @@ export interface PetVaccine {
   applied_date: string | null
   next_due_date: string | null
   notes: string | null
+  reminder_sent_at: string | null
   created_at: string
 }
 
@@ -84,4 +85,5 @@ export interface NewTagCredentials {
   tempPassword: string | null
   petName: string
   reusedExistingAccount: boolean
+  emailSent: boolean
 }

@@ -148,6 +148,17 @@ export function NovaTagDialog() {
               )}
             </div>
 
+            {credentials.emailSent ? (
+              <p className="mt-3 text-sm font-medium text-fern">
+                ✓ Enviamos essas credenciais por e-mail para {credentials.login}.
+              </p>
+            ) : (
+              <p className="mt-3 text-xs text-ink-faint">
+                Credenciais não enviadas por e-mail (sem e-mail do tutor, ou o Resend ainda está em modo de teste) —
+                entregue anotado.
+              </p>
+            )}
+
             <Button variant="primary" size="lg" fullWidth className="mt-5" onClick={() => handleClose(false)}>
               Concluído, já anotei
             </Button>
