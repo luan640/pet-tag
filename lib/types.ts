@@ -87,3 +87,8 @@ export interface NewTagCredentials {
   reusedExistingAccount: boolean
   emailSent: boolean
 }
+
+export interface PetOwnerPasswordReset {
+  login: string
+  tempPassword: string
+}

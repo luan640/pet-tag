@@ -7,6 +7,7 @@ import { toggleActive } from '@/actions/admin'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toaster'
+import { PetCredentialsDialog } from '@/components/admin/pet-credentials-dialog'
 import { formatDateShort } from '@/lib/utils'
 import type { PetListRow } from '@/lib/types'
 
@@ -60,6 +61,7 @@ export function PetRow({ pet, publicUrl, tagUrl }: { pet: PetListRow; publicUrl:
             <ExternalLink size={16} />
           </Button>
         </a>
+        <PetCredentialsDialog pet={pet} tagUrl={tagUrl} />
         <Button variant="outline" size="sm" onClick={handleToggle} disabled={pending}>
           <Power size={15} />
           {pet.active ? 'Desativar' : 'Reativar'}

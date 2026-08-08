@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Copy, Check, PawPrint, KeyRound } from 'lucide-react'
+import { Plus, PawPrint, KeyRound } from 'lucide-react'
 import { createPetTag } from '@/actions/admin'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,34 +16,8 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/toaster'
+import { CopyField } from '@/components/admin/copy-field'
 import type { NewTagCredentials } from '@/lib/types'
-
-function CopyField({ label, value }: { label: string; value: string }) {
-  const [copied, setCopied] = useState(false)
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(value)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1800)
-  }
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wide text-ink-faint">{label}</span>
-      <div className="flex items-center gap-2 rounded-xl border border-line bg-bg px-3 py-2.5">
-        <span className="flex-1 truncate font-mono text-sm text-ink">{value}</span>
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="shrink-0 rounded-lg p-1.5 text-ink-soft hover:bg-ink/5 hover:text-ink transition-colors"
-          aria-label={`Copiar ${label}`}
-        >
-          {copied ? <Check size={16} className="text-fern" /> : <Copy size={16} />}
-        </button>
-      </div>
-    </div>
-  )
-}
 
 export function NovaTagDialog() {
   const router = useRouter()
@@ -129,7 +103,8 @@ export function NovaTagDialog() {
                 Tag de {credentials.petName} criada
               </DialogTitle>
               <DialogDescription>
-                Anote ou copie estas informações agora — a senha não será exibida novamente. Entregue junto com a tag.
+                Anote ou copie estas informações agora — a senha não será exibida novamente. Se precisar depois, dá
+                para gerar uma nova senha a qualquer momento na lista de tags. Entregue junto com a tag.
               </DialogDescription>
             </DialogHeader>
 

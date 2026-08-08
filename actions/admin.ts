@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { findAuthUserByEmail } from '@/lib/supabase/auth-admin'
 import { slugify, generateSlugSuffix, generateTempPassword } from '@/lib/utils'
 import { sendNewTagCredentialsEmail } from '@/lib/email'
-import type { ActionResult, NewTagCredentials, PetListRow } from '@/lib/types'
+import type { ActionResult, NewTagCredentials, PetListRow, PetOwnerPasswordReset } from '@/lib/types'
 
 function appUrl() {
   return (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
@@ -157,4 +157,43 @@ export async function toggleActive(petId: string, active: boolean): Promise<Acti
   }
 
   return { success: true, data: undefined }
+}
+
+export async function resetPetOwnerPassword(petId: string): Promise<ActionResult<PetOwnerPasswordReset>> {
+  const admin = createAdminClient()
+
+  const { data: pet, error: petError } = await admin
+    .from('pets')
+    .select('owner_id')
+    .eq('id', petId)
+    .single()
+
+  if (petError || !pet) {
+    return { success: false, error: 'Pet não encontrado.' }
+  }
+
+  const { data: userData, error: userError } = await admin.auth.admin.getUserById(pet.owner_id)
+  if (userError || !userData.user) {
+    return { success: false, error: 'Conta do tutor não encontrada.' }
+  }
+
+  const tempPassword = generateTempPassword()
+
+  const { error: updateError } = await admin.auth.admin.updateUserById(pet.owner_id, {
+    password: tempPassword,
+  })
+
+  if (updateError) {
+    return { success: false, error: updateError.message }
+  }
+
+  await admin.from('profiles').update({ must_change_password: true }).eq('id', pet.owner_id)
+
+  return {
+    success: true,
+    data: {
+      login: userData.user.email ?? '',
+      tempPassword,
+    },
+  }
 }
